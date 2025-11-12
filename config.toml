@@ -1,0 +1,23 @@
+# config.toml
+
+[tuya]
+ACCESS_ID = "9c9jgnfkwgg8m43qhgt4"
+ACCESS_SECRET = "07e9d2681c544a1084ea3522ff74f684"
+API_ENDPOINT = "https://openapi.tuya.com"
+
+[mongodb]
+URI = "mongodb+srv://jobayerfaisalfahim_db_user:3CoEQ1QV3X4ITDow@jobayer001.p81ctxq.mongodb.net/?appName=Jobayer001//tuya_energy"
+DB_NAME = "tuya_energy"
+
+[app]
+TIMEZONE = "Asia/Dhaka"
+REFRESH_INTERVAL_SEC = 5
+
+
+TUYA_ACCESS_ID=9c9jgnfkwgg8m43qhgt4
+TUYA_ACCESS_SECRET=07e9d2681c544a1084ea3522ff74f684
+TUYA_API_ENDPOINT=https://openapi.tuyaeu.com
+ELECTRICITY_RATE=10.0
+MONGODB_URI=mongodb+srv://jobayerfaisalfahim_db_user:3CoEQ1QV3X4ITDow@jobayer001.p81ctxq.mongodb.net/?appName=Jobayer001//tuya_energy
+MONGODB_DB=tuya_energy
+TUYA_DEVICE_ID=bf52f933daca3ce0dbzsc7
