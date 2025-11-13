@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import pandas as pd
 from tuya_api_mongo import range_docs, latest_docs
 from datetime import timedelta
 from zoneinfo import ZoneInfo
+from helpers import dhaka_tz
+
 
 
 # Bangladesh slab rates (example)
@@ -23,26 +25,36 @@ def _tier_cost(units_kwh: float) -> float:
 
 
 def daily_monthly_for(device_id: str):
-    now = datetime.now(ZoneInfo("Asia/Dhaka"))
+    # Current time in Dhaka
+    now = datetime.now(dhaka_tz)
 
-    # day range
-    day_start = datetime(now.year, now.month, now.day)
-    day_end   = datetime(now.year, now.month, now.day, 23, 59, 59, 999999)
+    # -------- Dhaka "today" → UTC-naive for Mongo --------
+    day_start_local = datetime(now.year, now.month, now.day, tzinfo=dhaka_tz)
+    day_end_local   = day_start_local.replace(
+        hour=23, minute=59, second=59, microsecond=999999
+    )
+
+    day_start = day_start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    day_end   = day_end_local.astimezone(timezone.utc).replace(tzinfo=None)
+
     ddf = range_docs(device_id, day_start, day_end)
     d_units = round(float(ddf["energy_kWh"].sum()) if not ddf.empty else 0.0, 3)
     d_cost  = _tier_cost(d_units)
 
-    # month range
-    m_start = datetime(now.year, now.month, 1)
-    # naive month-end
+    # -------- Dhaka "this month" → UTC-naive for Mongo --------
+    m_start_local = datetime(now.year, now.month, 1, tzinfo=dhaka_tz)
     if now.month == 12:
-        next_month = datetime(now.year + 1, 1, 1)
+        next_month_local = datetime(now.year + 1, 1, 1, tzinfo=dhaka_tz)
     else:
-        next_month = datetime(now.year, now.month + 1, 1)
-    m_end = next_month.replace(hour=0, minute=0, second=0, microsecond=0)
+        next_month_local = datetime(now.year, now.month + 1, 1, tzinfo=dhaka_tz)
+
+    m_start = m_start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    m_end   = next_month_local.astimezone(timezone.utc).replace(tzinfo=None)
+
     mdf = range_docs(device_id, m_start, m_end)
     m_units = round(float(mdf["energy_kWh"].sum()) if not mdf.empty else 0.0, 3)
     m_cost  = _tier_cost(m_units)
+
     return d_units, d_cost, m_units, m_cost
 
 
@@ -57,8 +69,12 @@ def _latest_power_voltage(device_id: str):
     v = float(v) if v is not None else None
     return p, v
 
-def aggregate_totals_all_devices(devices: list[str|dict]):
-    """Return (total_power_now_W, present_voltage_max_V, today_kwh, today_bill_bdt, month_kwh, month_bill_bdt)"""
+
+
+
+def aggregate_totals_all_devices(devices: list[str | dict]):
+    """Return (total_power_now_W, present_voltage_max_V,
+               today_kwh, today_bill_bdt, month_kwh, month_bill_bdt)"""
     dev_ids = [d["id"] if isinstance(d, dict) else d for d in devices]
 
     # ---- Instant totals ----
@@ -71,10 +87,16 @@ def aggregate_totals_all_devices(devices: list[str|dict]):
             latest_voltages.append(float(v))
     present_voltage = round(max(latest_voltages), 2) if latest_voltages else 0.0
 
-    # ---- Today (Dhaka local naive) ----
-    now = datetime.now()
-    day_start = datetime(now.year, now.month, now.day)
-    day_end   = datetime(now.year, now.month, now.day, 23, 59, 59, 999999)
+    # ---- Today (Dhaka) ----
+    now = datetime.now(dhaka_tz)
+
+    day_start_local = datetime(now.year, now.month, now.day, tzinfo=dhaka_tz)
+    day_end_local   = day_start_local.replace(
+        hour=23, minute=59, second=59, microsecond=999999
+    )
+
+    day_start = day_start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    day_end   = day_end_local.astimezone(timezone.utc).replace(tzinfo=None)
 
     total_kwh_today = 0.0
     for did in dev_ids:
@@ -84,13 +106,15 @@ def aggregate_totals_all_devices(devices: list[str|dict]):
     total_kwh_today = round(total_kwh_today, 3)
     today_bill_bdt  = _tier_cost(total_kwh_today)
 
-    # ---- This month ----
-    m_start = datetime(now.year, now.month, 1)
+    # ---- This month (Dhaka) ----
+    m_start_local = datetime(now.year, now.month, 1, tzinfo=dhaka_tz)
     if now.month == 12:
-        next_month = datetime(now.year + 1, 1, 1)
+        next_month_local = datetime(now.year + 1, 1, 1, tzinfo=dhaka_tz)
     else:
-        next_month = datetime(now.year, now.month + 1, 1)
-    m_end = next_month.replace(hour=0, minute=0, second=0, microsecond=0)
+        next_month_local = datetime(now.year, now.month + 1, 1, tzinfo=dhaka_tz)
+
+    m_start = m_start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    m_end   = next_month_local.astimezone(timezone.utc).replace(tzinfo=None)
 
     total_kwh_month = 0.0
     for did in dev_ids:
@@ -108,6 +132,7 @@ def aggregate_totals_all_devices(devices: list[str|dict]):
         total_kwh_month,
         month_bill_bdt,
     )
+
 
 
 
