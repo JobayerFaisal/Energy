@@ -7,7 +7,6 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import altair as alt
 import plotly.express as px
-import plotly.express as px
 import os
 import numpy as np
 from plotly.subplots import make_subplots
@@ -178,7 +177,7 @@ def get_device_by_id(device_id: str):
 
 
 
-# ------------------------------------------------------------------------------------
+# -------------------------PAGE HOME-----------------------------------------------------------
 # Pages
 
 def page_home():
@@ -395,7 +394,6 @@ def page_manage():
         st.markdown("---")   # optional separator between device cards
 
 
-
 #------------------------------Device Detail Page ----------------------------------------------
 def page_device():
     dev_id = st.session_state.get("current_device_id")
@@ -463,37 +461,6 @@ def page_device():
         if st.button("⬅️ Back to My Devises"):
             go_home()
             st.rerun()
-
-
-    # # Recent chart
-    # st.markdown("### 📈 Recent Power (last 30 samples)")
-    # df_recent = latest_docs(dev_id, n=30)
-    # if not df_recent.empty:
-    #     st.line_chart(df_recent.set_index("timestamp")["power"])
-    # else:
-    #     st.info("No data yet.")
-
-    # Recent chart (Altair)
-    # st.markdown("### ⚡ Recent Power (last 30 samples)")
-
-    # df_recent = latest_docs(dev_id, n=30)
-    # if not df_recent.empty:
-    #     chart = (
-    #         alt.Chart(df_recent)
-    #         .mark_line(point=True)
-    #         .encode(
-    #             x=alt.X("timestamp:T", title="Time"),
-    #             y=alt.Y("power:Q", title="Power (W)", scale=alt.Scale(domain=[0, df_recent["power"].quantile(0.98)])),
-    #             tooltip=["timestamp:T", "power:Q"]
-    #         )
-    #         .properties(height=300)
-    #         .interactive()  # zoom, pan
-    #     )
-    #     st.altair_chart(chart, use_container_width=True)
-    # else:
-    #     st.info("No data yet.")
-
-
 
     st.markdown("### ⚡ Recent Power (last 30 samples)")
     df_recent = latest_docs(dev_id, n=30)
@@ -901,9 +868,6 @@ def page_manual():
             "  - Make sure the device has been opened at least once to start logging.\n"
             "  - Adjust the date range and aggregation."
         )
-
-
-
 
 
 # ------------------------------------------------------------------------------------------------------------------------
