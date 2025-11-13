@@ -2,6 +2,7 @@ from datetime import datetime
 import pandas as pd
 from tuya_api_mongo import range_docs, latest_docs
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 
 # Bangladesh slab rates (example)
@@ -20,8 +21,10 @@ def _tier_cost(units_kwh: float) -> float:
         last_upper = upper
     return round(cost, 2)
 
+
 def daily_monthly_for(device_id: str):
-    now = datetime.now()
+    now = datetime.now(ZoneInfo("Asia/Dhaka"))
+
     # day range
     day_start = datetime(now.year, now.month, now.day)
     day_end   = datetime(now.year, now.month, now.day, 23, 59, 59, 999999)
@@ -53,7 +56,6 @@ def _latest_power_voltage(device_id: str):
     v = row.get("voltage", None)
     v = float(v) if v is not None else None
     return p, v
-
 
 def aggregate_totals_all_devices(devices: list[str|dict]):
     """Return (total_power_now_W, present_voltage_max_V, today_kwh, today_bill_bdt, month_kwh, month_bill_bdt)"""
