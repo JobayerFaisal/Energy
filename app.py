@@ -29,9 +29,110 @@ from billing import daily_monthly_for, _latest_power_voltage, _tier_cost
 
 # ------------------------------------------------------------------------------------
 # Page setup
+
 st.set_page_config(page_title="Smart Plug Dashboard", layout="wide")
 DATA_DIR = Path("data")
 
+# ------------------------------------------------------------------------------------
+# Global Theming (Light Green UI)
+# background: linear-gradient(180deg, #C4EAC4 0%, #E0F4E0 100%) !important;
+# background: linear-gradient(180deg, #D3F2D3 0%, #E8F8E8 100%) !important;
+
+
+st.markdown("""
+<style>
+/* Overall app background */
+.stApp {
+    background: linear-gradient(180deg, #B5E3B5 0%, #D6F0D6 100%) !important;
+}
+
+/* Main content padding */
+.main .block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 3rem;
+}
+
+/* Sidebar style */
+[data-testid="stSidebar"] {
+    background-color: #DDF5DD !important;
+    border-right: 1px solid #c0e0c0;
+}
+[data-testid="stSidebar"] * {
+    color: #123524 !important;
+    font-size: 0.95rem;
+}
+
+/* Titles & captions */
+h1, h2, h3, h4, h5 {
+    color: #123524 !important;
+}
+.stCaption, .stMarkdown p {
+    color: #215236 !important;
+}
+
+/* Metric cards */
+div[data-testid="metric-container"] {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid #d1e8d1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+/* Buttons */
+.stButton>button {
+    background-color: #4CAF50 !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 0.4rem 0.9rem !important;
+    border: none !important;
+    font-weight: 600 !important;
+}
+.stButton>button:hover {
+    background-color: #45A049 !important;
+}
+
+/* Quick action row subtle shadow */
+.quick-actions-row {
+    background-color: #F5FFF5;
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
+    border: 1px solid #d1e8d1;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+
+/* Section headings */
+.section-title {
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-top: 0.3rem;
+}
+
+/* Plotly container tweaks */
+.stPlotlyChart {
+    background-color: #ffffff;
+    padding: 0.6rem;
+    border-radius: 12px;
+    border: 1px solid #d6ead6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+/* Dataframes */
+[data-testid="stDataFrame"] {
+    border-radius: 10px;
+    border: 1px solid #d6ead6;
+}
+
+/* Expanders (for manual page) */
+.streamlit-expanderHeader {
+    font-weight: 600;
+    color: #123524 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+#--------------------------------------Session defaults------------------------------------------
 # Session defaults
 if "route" not in st.session_state:
     st.session_state.route = "home"   # "home" | "mydevices" | "add" | "manage" | "device"
@@ -39,6 +140,10 @@ if "current_device_id" not in st.session_state:
     st.session_state.current_device_id = None
 if "current_device_name" not in st.session_state:
     st.session_state.current_device_name = None
+
+
+
+# -----------------------------------------Small helpers-------------------------------------------
 
 # Small helpers
 def set_route(new_route: str):
@@ -77,7 +182,7 @@ def get_device_by_id(device_id: str):
 # Pages
 
 def page_home():
-    st.title("📊 Dashboard")
+    st.title("ENERGY MONITOR DASHBOARD")
     st.caption("At-a-glance overview of your smart energy setup.")
 
     devices = load_devices()
@@ -86,6 +191,7 @@ def page_home():
     total_power_now, present_voltage, today_kwh, today_bill_bdt, month_kwh, month_bill_bdt = \
         aggregate_totals_all_devices(devices)
 
+    # ---- Top metrics ----
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
         st.metric("Devices", total)
@@ -100,13 +206,18 @@ def page_home():
 
 
     st.markdown("---")
+
     st.subheader("Quick Actions")
+    # Quick Actions styled row
+    # st.markdown('<div class="quick-actions-row">', unsafe_allow_html=True)
+    # st.markdown('<div class="section-title">Quick Actions</div>', unsafe_allow_html=True)
+
     a1, a2, a3, a4, a5 = st.columns(5)
     with a1:
-        if st.button("📂 My Devices"):
+        if st.button("📂 My Devices     -"):
             go_mydevices(); st.rerun()
     with a2:
-        if st.button("➕ Add Device"):
+        if st.button("➕ Add Device     -"):
             go_add(); st.rerun()
     with a3:
         if st.button("⚙️ Manage Devices"):
@@ -131,16 +242,29 @@ def page_home():
 
     fig = go.Figure()
 
+    # --- POWER (Filled Area) ---
     fig.add_trace(
         go.Scatter(
-            x=ts["timestamp"], y=ts["power_sum_W"],
-            mode="lines", name="Power (W)"
+            x=ts["timestamp"],
+            y=ts["power_sum_W"],
+            mode="lines",
+            name="Power (W)",
+            line=dict(color="rgba(0, 102, 255, 1)"),
+            fill="tozeroy",
+            fillcolor="rgba(0, 102, 255, 0.25)"
         )
     )
+
+    # --- VOLTAGE (Filled Area) ---
     fig.add_trace(
         go.Scatter(
-            x=ts["timestamp"], y=ts["voltage_avg_V"],
-            mode="lines", name="Voltage (V)"
+            x=ts["timestamp"],
+            y=ts["voltage_avg_V"],
+            mode="lines",
+            name="Voltage (V)",
+            line=dict(color="rgba(255, 0, 0, 1)"),
+            fill="tozeroy",
+            fillcolor="rgba(255, 0, 0, 0.20)"
         )
     )
 
@@ -148,27 +272,23 @@ def page_home():
         title="Total Power & Voltage — last 24h",
         hovermode="x unified",
         template="plotly_white",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-    )
-    fig.update_yaxes(title_text="Power (W) / Voltage (V)", rangemode="tozero")
-    fig.update_xaxes(
-        title_text="Time",
-        rangeslider=dict(visible=True),
-        rangeselector=dict(
-            buttons=[
-                dict(count=6, step="hour", stepmode="backward", label="6h"),
-                dict(count=12, step="hour", stepmode="backward", label="12h"),
-                dict(count=1, step="day", stepmode="backward", label="1d"),
-                dict(step="all", label="All"),
-            ]
+
+        # Light green chart background
+        plot_bgcolor="#C8F9F1",
+        paper_bgcolor="#D4F7F2",
+
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0
         ),
     )
 
+
+
     st.plotly_chart(fig, use_container_width=True)
-
-
-
-
 
 
 
@@ -190,9 +310,11 @@ def page_mydevices():
         with cols[i % 3]:
             st.markdown(f"#### 🔌 {d['name']}")
             st.markdown(f"**Device ID:** `{d['id']}`")
+            
             if st.button(f"View Details ({d['name']})", key=f"view_{i}"):
                 go_device_detail(d["id"], d["name"])
                 st.rerun()
+                
             st.markdown("---")
 
 #------------------------------Add Device Page --------------------------------------------------------------------
@@ -200,6 +322,9 @@ def page_mydevices():
 
 def page_add():
     st.header("➕ Add Device")
+    st.caption("Register a new Tuya smart plug into the dashboard.")
+
+
     name = st.text_input("Device Name")
     dev_id = st.text_input("Device ID")
     c1, c2 = st.columns([1,1])
@@ -224,6 +349,9 @@ def page_add():
 
 def page_manage():
     st.header("⚙️ Manage Devices")
+    st.caption("Edit device names, IDs, or open a device quickly.")
+
+
     devs = load_devices()
     if not devs:
         st.info("No devices to manage.")
@@ -290,6 +418,8 @@ def page_device():
     st_autorefresh(interval=10000, key=f"data_refresh_{dev_id}")     # 30 SECOND INTERVAL
 
     st.title(f"🔌 {dev_name} — Live")
+    st.caption("Live Tuya readings, quick control and billing estimate.")
+
 
     # Fetch + log once (writes Mongo)
     result = fetch_and_log_once(dev_id, dev_name)
@@ -388,32 +518,6 @@ def page_device():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     # Billing
     st.markdown("### 💰 Bill Estimate")
     d_units, d_cost, m_units, m_cost = daily_monthly_for(dev_id)
@@ -424,11 +528,6 @@ def page_device():
     with b2:
         st.metric("🗓 Month kWh", f"{m_units:.3f}")
         st.metric("💰 Month BDT", f"{m_cost:.2f}")
-
-
-
-
-
 
 
 
@@ -478,9 +577,9 @@ def page_device():
             rangeslider=dict(visible=True),
             rangeselector=dict(
                 buttons=list([
-                    dict(count=6, step="hour", stepmode="backward", label="6h"),
-                    dict(count=12, step="hour", stepmode="backward", label="12h"),
-                    dict(count=1, step="day", stepmode="backward", label="1d"),
+                    # dict(count=6, step="hour", stepmode="backward", label="6h"),
+                    # dict(count=12, step="hour", stepmode="backward", label="12h"),
+                    # dict(count=1, step="day", stepmode="backward", label="1d"),
                     dict(step="all", label="All")
                 ])
             )
@@ -498,7 +597,6 @@ def page_device():
 def _device_label(d):
     return f"{d['name']} ({d['id']})"
 
-# ------------------------------Range Reports Page ----------------------------------------------
 
 def _run_single_device_range_report(dev_id: str, dev_name: str,
                                     start_dt: datetime, end_dt: datetime,
@@ -587,22 +685,22 @@ def _run_single_device_range_report(dev_id: str, dev_name: str,
         hovermode="x unified",
         template="plotly_white",
         showlegend=False,
-        height=600,
+        height=400,
     )
-    fig.update_xaxes(
-        title_text="Time",
-        rangeslider=dict(visible=True),
-        rangeselector=dict(
-            buttons=[
-                dict(count=6, step="hour", stepmode="backward", label="6h"),
-                dict(count=12, step="hour", stepmode="backward", label="12h"),
-                dict(count=1, step="day", stepmode="backward", label="1d"),
-                dict(step="all", label="All"),
-            ]
-        ),
-        row=2,
-        col=1,
-    )
+    # fig.update_xaxes(
+    #     title_text="Time",
+    #     rangeslider=dict(visible=True),
+    #     rangeselector=dict(
+    #         buttons=[
+    #             dict(count=6, step="hour", stepmode="backward", label="6h"),
+    #             dict(count=12, step="hour", stepmode="backward", label="12h"),
+    #             dict(count=1, step="day", stepmode="backward", label="1d"),
+    #             dict(step="all", label="All"),
+    #         ]
+    #     ),
+    #     row=2,
+    #     col=1,
+    # )
     fig.update_yaxes(title_text="Voltage (V)", row=1, col=1)
     fig.update_yaxes(title_text="Current (A)", row=2, col=1)
 
@@ -668,18 +766,18 @@ def _run_all_devices_range_report(devices, start_dt: datetime, end_dt: datetime,
         yaxis_title="Power (W)",
         xaxis_title="Time",
     )
-    fig.update_yaxes(rangemode="tozero")
-    fig.update_xaxes(
-        rangeslider=dict(visible=True),
-        rangeselector=dict(
-            buttons=[
-                dict(count=6, step="hour", stepmode="backward", label="6h"),
-                dict(count=12, step="hour", stepmode="backward", label="12h"),
-                dict(count=1, step="day", stepmode="backward", label="1d"),
-                dict(step="all", label="All"),
-            ]
-        ),
-    )
+    # fig.update_yaxes(rangemode="tozero")
+    # fig.update_xaxes(
+    #     rangeslider=dict(visible=True),
+    #     rangeselector=dict(
+    #         buttons=[
+    #             dict(count=6, step="hour", stepmode="backward", label="6h"),
+    #             dict(count=12, step="hour", stepmode="backward", label="12h"),
+    #             dict(count=1, step="day", stepmode="backward", label="1d"),
+    #             dict(step="all", label="All"),
+    #         ]
+    #     ),
+    # )
 
     st.plotly_chart(fig, use_container_width=True)
 
@@ -687,6 +785,7 @@ def _run_all_devices_range_report(devices, start_dt: datetime, end_dt: datetime,
 
 def page_reports():
     st.title("📈 Range Reports")
+    st.caption("Generate custom range reports for one device or all devices combined.")
 
     devices = load_devices()
     if not devices:
@@ -728,6 +827,80 @@ def page_reports():
             )
 
 
+# ------------------------------User Manual Page ----------------------------------------------
+
+def page_manual():
+    st.title("📘 User Manual")
+    st.caption("How to use the Smart Plug Energy Monitor dashboard effectively.")
+
+    st.markdown("### 1. Overview")
+    st.markdown(
+        "- **Home**: High-level overview of all devices, today & monthly bill, and 24h chart.\n"
+        "- **My Devices**: List of all configured smart plugs.\n"
+        "- **Range Reports**: Detailed analytics for a custom date range for single & all combined devices.\n"
+        "- **Device page**: Control, Live readings and billing estimate."
+    )
+
+    with st.expander("Introducing with a new device"):
+        st.markdown(
+            "1. Add your device in the socket.\n"
+            "2. Connect it to WiFi using the Tuya **SmartLife** app.\n"
+            "3. Ensure it is online in the Tuya **SmartLife** app.\n"
+            "4. Note down the **Device ID** from the Tuya app (Click to Device > Edit >  Device Info > Device ID/Virtual ID).\n"
+            "2. Use **Add Device** in this dashboard to register it."
+        )
+
+    with st.expander("Getting started"):
+        st.markdown(
+            "1. Go to **Add Device** from the sidebar or Home quick actions.\n"
+            "2. Enter a **Device Name** (friendly label) and the **Device ID** from Tuya.\n"
+            "3. Click **Save**. The device will appear under **My Devices**.\n"
+            "4. Open the device to start logging live data."
+        )
+
+    with st.expander("Live Device View & Controls"):
+        st.markdown(
+            "- Open a device from **My Devices**.\n"
+            "- The top metrics show **Voltage (V)**, **Power (W)** and **Current (A)** in real-time.\n"
+            "- Use **Turn ON / Turn OFF** buttons to control the plug via Tuya.\n"
+            "- **Bill Estimate** shows today and this month’s kWh and cost (BDT) based on Bangladeshi tariff."
+        )
+
+    with st.expander("Range Reports (Single & All Devices)"):
+        st.markdown(
+            "- Go to **Range Reports** from the sidebar or Home quick action.\n"
+            "- Choose either **All devices (combined)** or a single device.\n"
+            "- Select **Start date**, **End date**, and **Aggregation** (raw / 1-min / 5-min / 15-min).\n"
+            "- Click **Run report**:\n"
+            "  - Single Device: Voltage, Current stats, total energy and bill for that device.\n"
+            "  - All Devices: Combined power curve, total kWh and bill for all devices."
+        )
+    
+    with st.expander("Managing Devices"):
+        st.markdown(
+            "- Go to **Manage Devices** from the sidebar or Home quick action.\n"
+            "- Edit device names or IDs directly in the text fields.\n"
+            "- Use **Save** to update, **Delete** to remove, or **Open** to view live data."
+        )
+
+    with st.expander("Understanding key metrics"):
+        st.markdown(
+            "- **Power (W)**: Instant power consumption.\n"
+            "- **Energy (kWh)**: Accumulated energy over time.\n"
+            "- **Voltage (V)** and **Current (A)**: Line quality and load.\n"
+            "- **Bill (BDT)**: Calculated using your configured tiered tariff."
+        )
+
+    with st.expander("Troubleshooting"):
+        st.markdown(
+            "- If a device shows **Tuya API error**, check:\n"
+            "  - Internet connectivity.\n"
+            "  - Tuya credentials / token configuration.\n"
+            "  - Device is online in the Tuya app.\n"
+            "- If charts are empty:\n"
+            "  - Make sure the device has been opened at least once to start logging.\n"
+            "  - Adjust the date range and aggregation."
+        )
 
 
 
@@ -735,10 +908,18 @@ def page_reports():
 
 # ------------------------------------------------------------------------------------------------------------------------
 # Sidebar navigation (kept in sync with router)
+
 nav_choice = st.sidebar.radio(
     "Navigate",
-    ["Home", "My Devices", "Add Device", "Manage Devices", "Range Reports"],
-    index={"home":0, "mydevices":1, "add":2, "manage":3, "reports":4}.get(st.session_state.route, 0)
+    ["Home", "My Devices", "Add Device", "Manage Devices", "Range Reports", "User Manual"],
+    index={
+        "home": 0,
+        "mydevices": 1,
+        "add": 2,
+        "manage": 3,
+        "reports": 4,
+        "manual": 5
+    }.get(st.session_state.route, 0)
 )
 
 st.sidebar.markdown("---")
@@ -750,6 +931,7 @@ sidebar_map = {
     "Add Device": "add",
     "Manage Devices": "manage",
     "Range Reports": "reports",
+    "User Manual": "manual",
 }
 
 
@@ -772,6 +954,8 @@ elif st.session_state.route == "device":
     page_device()
 elif st.session_state.route == "reports":
     page_reports()
+elif st.session_state.route == "manual":
+    page_manual()
 else:
     page_home()
 
