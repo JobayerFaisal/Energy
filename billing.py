@@ -6,7 +6,7 @@ from datetime import timedelta
 
 # Bangladesh slab rates (example)
 RATES = [
-    (50, 4.63), (75, 5.26), (200, 7.20), (300, 7.59),
+    (75, 5.26), (200, 7.20), (300, 7.59),
     (400, 8.02), (600, 12.67), (float("inf"), 14.61)
 ]
 
@@ -53,6 +53,7 @@ def _latest_power_voltage(device_id: str):
     v = row.get("voltage", None)
     v = float(v) if v is not None else None
     return p, v
+
 
 def aggregate_totals_all_devices(devices: list[str|dict]):
     """Return (total_power_now_W, present_voltage_max_V, today_kwh, today_bill_bdt, month_kwh, month_bill_bdt)"""

@@ -10,7 +10,7 @@ def parse_metrics(status_json: dict):
     result = status_json.get("result", [])
     m = {x.get("code"): x.get("value") for x in result}
     voltage = (m.get("cur_voltage") or 0) / 10.0     # deciV → V
-    power   = (m.get("cur_power") or 0) * 1.0        # W
+    power   = (m.get("cur_power") or 0) / 10.0        # W
     current = (m.get("cur_current") or 0) / 1000.0   # mA → A
     # integrate power over 5s: kWh = W * (5/3600) / 1000
     energy_kwh = power * (5.0 / 3600.0) / 1000.0
