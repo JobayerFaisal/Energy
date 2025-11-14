@@ -183,7 +183,7 @@ def get_device_by_id(device_id: str):
 def page_home():
     st.title("ENERGY MONITOR DASHBOARD")
     st.caption("At-a-glance overview of your smart energy setup.")
-    st_autorefresh(interval=30000, key=f"data_refresh_{dev_id}")
+    st_autorefresh(interval=30000, key="home_refresh")
 
     devices = load_devices()
     total = len(devices)
@@ -993,4 +993,5 @@ else:
     page_home()
 
 # End of app.py
+
 
