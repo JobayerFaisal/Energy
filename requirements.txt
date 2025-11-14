@@ -4,16 +4,6 @@ pandas
 plotly
 python-dotenv
 streamlit_autorefresh
-os
-typing
-datetime
 pymongo
-dotenv
-time
-zoneinfo
-json
-pathlib
-hmac
-hashlib
 altair
 numpy
