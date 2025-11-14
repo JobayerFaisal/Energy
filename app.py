@@ -289,13 +289,38 @@ def page_home():
 
     st.plotly_chart(fig, use_container_width=True)
 
-
+# ------------------------------Device Status Helper --------------------------------------------------------------------
+def device_status(device_id):
+    df = latest_docs(device_id, n=1)
+    if df.empty:
+        return False   # assume OFF when no data
+    p = float(df.iloc[0].get("power", 0))
+    return p > 1.0     # ON if power > 1 watt
 
 # ------------------------------My Devices Page --------------------------------------------------------------------
+
+
 
 def page_mydevices():
     st.title("⚡ My Devices")
     st.caption("Browse and open a device to view live data.")
+
+    button_css = """
+    <style>
+    .stButton button[kind="primary"] {
+        background-color: #2ecc71 !important;  /* ON = green */
+        color: white !important;
+        border-radius: 8px;
+    }
+
+    .stButton button[kind="secondary"] {
+        background-color: #e74c3c !important;  /* OFF = red */
+        color: white !important;
+        border-radius: 8px;
+    }
+    </style>
+    """
+    st.markdown(button_css, unsafe_allow_html=True)
 
     devices = load_devices()
     if not devices:
@@ -307,14 +332,22 @@ def page_mydevices():
     cols = st.columns(3)
     for i, d in enumerate(devices):
         with cols[i % 3]:
+            is_on = device_status(d["id"])
+            btn_type = "primary" if is_on else "secondary"   # primary=green, secondary=red
+
             st.markdown(f"#### 🔌 {d['name']}")
             st.markdown(f"**Device ID:** `{d['id']}`")
-            
-            if st.button(f"View Details ({d['name']})", key=f"view_{i}"):
+
+            if st.button(
+                f"View Details ({d['name']})",
+                key=f"view_{i}",
+                type=btn_type
+            ):
                 go_device_detail(d["id"], d["name"])
                 st.rerun()
-                
+
             st.markdown("---")
+
 
 #------------------------------Add Device Page --------------------------------------------------------------------
 
@@ -413,7 +446,7 @@ def page_device():
         dev_name = d["name"] if d else dev_id
 
     # Live refresh every 5s
-    st_autorefresh(interval=10000, key=f"data_refresh_{dev_id}")     # 30 SECOND INTERVAL
+    st_autorefresh(interval=30000, key=f"data_refresh_{dev_id}")     # 30 SECOND INTERVAL
 
     st.title(f"🔌 {dev_name} — Live")
     st.caption("Live Tuya readings, quick control and billing estimate.")
@@ -435,6 +468,10 @@ def page_device():
     v = float(row.get("voltage", 0.0))
     c = float(row.get("current", 0.0))
     p = float(row.get("power", 0.0))
+    # Simple status logic: if power > 1 W, assume ON
+    is_on = p > 1.0
+    status_text = "🟢 Device is ON" if is_on else "🔴 Device is OFF"
+
 
     m1, m2, m3 = st.columns(3)
     m1.metric("🔋 Voltage (V)", f"{v:.1f}")
@@ -442,7 +479,28 @@ def page_device():
     m3.metric("🔌 Current (A)", f"{c:.3f}")
 
     # Controls
-    colA, colB, colC = st.columns([1,1,2])
+    # colA, colB, colC = st.columns([1,1,2])
+    # with colA:
+    #     if st.button("Turn ON"):
+    #         try:
+    #             token = get_token()
+    #             st.info(control_device(dev_id, token, "switch_1", True))
+    #         except Exception as e:
+    #             st.error(e)
+    # with colB:
+    #     if st.button("Turn OFF"):
+    #         try:
+    #             token = get_token()
+    #             st.info(control_device(dev_id, token, "switch_1", False))
+    #         except Exception as e:
+    #             st.error(e)
+    # with colC:
+    #     if st.button("⬅️ Back to My Devises"):
+    #         go_home()
+    #         st.rerun()
+        # Controls
+    colA, colB, colC, colD = st.columns([1,1,1,2])
+
     with colA:
         if st.button("Turn ON"):
             try:
@@ -450,6 +508,7 @@ def page_device():
                 st.info(control_device(dev_id, token, "switch_1", True))
             except Exception as e:
                 st.error(e)
+
     with colB:
         if st.button("Turn OFF"):
             try:
@@ -457,10 +516,19 @@ def page_device():
                 st.info(control_device(dev_id, token, "switch_1", False))
             except Exception as e:
                 st.error(e)
+
     with colC:
+        if st.button("Show Status"):
+            st.info(status_text)
+
+    with colD:
         if st.button("⬅️ Back to My Devises"):
             go_home()
             st.rerun()
+
+
+
+
 
     st.markdown("### ⚡ Recent Power (last 30 samples)")
     df_recent = latest_docs(dev_id, n=30)
