@@ -137,11 +137,6 @@ def aggregate_totals_all_devices(devices: list[str | dict]):
 
 
 
-
-
-
-
-
 def aggregate_timeseries_24h(devices: list[str|dict], resample_rule="5T") -> pd.DataFrame:
     """Return DataFrame with columns: timestamp, power_sum_W, voltage_avg_V for last 24h."""
     dev_ids = [d["id"] if isinstance(d, dict) else d for d in devices]
