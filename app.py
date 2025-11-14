@@ -335,7 +335,7 @@ def page_mydevices():
             is_on = device_status(d["id"])
             btn_type = "primary" if is_on else "secondary"   # primary=green, secondary=red
 
-            st.markdown(f"#### 🔌 {d['name']}")
+            st.markdown(f"####  {d['name']}")
             st.markdown(f"**Device ID:** `{d['id']}`")
 
             if st.button(
@@ -448,7 +448,7 @@ def page_device():
     # Live refresh every 5s
     st_autorefresh(interval=30000, key=f"data_refresh_{dev_id}")     # 30 SECOND INTERVAL
 
-    st.title(f"🔌 {dev_name} — Live")
+    st.title(f" {dev_name} — Live")
     st.caption("Live Tuya readings, quick control and billing estimate.")
 
 
@@ -955,7 +955,7 @@ nav_choice = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Auto-logging every 5s while a device page is open.")
+st.sidebar.caption("Auto-logging every 30s while a device page is open.")
 
 sidebar_map = {
     "Home": "home",
