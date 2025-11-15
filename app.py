@@ -23,6 +23,7 @@ from billing import daily_monthly_for, _latest_power_voltage       # :contentRef
 from helpers import go_home as _go_home                            # :contentReference[oaicite:5]{index=5}
 from billing import aggregate_timeseries_24h, aggregate_totals_all_devices
 from billing import daily_monthly_for, _latest_power_voltage, _tier_cost
+from datetime import datetime, timezone
 
 
 
@@ -298,7 +299,6 @@ def page_home():
 #     p = float(df.iloc[0].get("power", 0))
 #     return p > 1.0     # ON if power > 1 watt
 
-from datetime import datetime, timezone
 
 def _extract_switch(row):
     # Try a dedicated column first (if you later add it)
