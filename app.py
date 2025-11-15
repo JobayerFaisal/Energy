@@ -183,6 +183,7 @@ def get_device_by_id(device_id: str):
 def page_home():
     st.title("ENERGY MONITOR DASHBOARD")
     st.caption("At-a-glance overview of your smart energy setup.")
+    st_autorefresh(interval=30000, key="home_refresh")     # 30 SECOND INTERVAL
 
     devices = load_devices()
     total = len(devices)
@@ -290,12 +291,75 @@ def page_home():
     st.plotly_chart(fig, use_container_width=True)
 
 # ------------------------------Device Status Helper --------------------------------------------------------------------
-def device_status(device_id):
+# def device_status(device_id):
+#     df = latest_docs(device_id, n=1)
+#     if df.empty:
+#         return False   # assume OFF when no data
+#     p = float(df.iloc[0].get("power", 0))
+#     return p > 1.0     # ON if power > 1 watt
+
+from datetime import datetime, timezone
+
+def _extract_switch(row):
+    # Try a dedicated column first (if you later add it)
+    if "switch_1" in row and row["switch_1"] is not None:
+        return bool(row["switch_1"])
+
+    # Fallback: parse from raw->result
+    raw = row.get("raw") or {}
+    for dp in raw.get("result", []):
+        if dp.get("code") == "switch_1":
+            return bool(dp.get("value"))
+    return None  # unknown
+        
+
+def device_status(device_id, v_thresh=30.0, i_thresh=0.01, stale_secs=120):
+    """
+    Status rules:
+      - 'offline' : no recent data
+      - 'on'      : V > v_thresh and I > i_thresh
+      - 'idle'    : V > v_thresh and I <= i_thresh
+      - 'off'     : V <= v_thresh (ignore current)
+    """
     df = latest_docs(device_id, n=1)
     if df.empty:
-        return False   # assume OFF when no data
-    p = float(df.iloc[0].get("power", 0))
-    return p > 1.0     # ON if power > 1 watt
+        return "offline"
+
+    row = df.iloc[0]
+
+    # --- freshness check ---
+    ts = row["timestamp"]
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    now_utc = datetime.now(timezone.utc)
+    age = (now_utc - ts).total_seconds()
+    if age > stale_secs:
+        return "offline"
+
+    # --- voltage & current logic ---
+    v = float(row.get("voltage", 0.0) or 0.0)
+    i = float(row.get("current", 0.0) or 0.0)
+
+    if v > v_thresh and i > i_thresh:
+        return "on"
+    if v > v_thresh and i <= i_thresh:
+        return "idle"
+    # low voltage = truly off
+    return "off"
+
+
+def status_to_button_type(status: str) -> str:
+    if status == "on":
+        return "primary"     # green
+    if status == "idle":
+        return "primary"     # still ON, maybe different label if you want
+    if status == "off":
+        return "secondary"   # red
+    if status == "offline":
+        return "secondary"   # maybe grey later
+    return "secondary"
+
+
 
 # ------------------------------My Devices Page --------------------------------------------------------------------
 
@@ -307,20 +371,39 @@ def page_mydevices():
 
     button_css = """
     <style>
-    .stButton button[kind="primary"] {
-        background-color: #2ecc71 !important;  /* ON = green */
+    /* ON / IDLE -> primary */
+    .stButton > button[kind="primary"] {
+        background-color: #2ecc71 !important;  /* green */
         color: white !important;
         border-radius: 8px;
     }
 
-    .stButton button[kind="secondary"] {
-        background-color: #e74c3c !important;  /* OFF = red */
+    /* OFF / OFFLINE -> secondary */
+    .stButton > button[kind="secondary"] {
+        background-color: #e74c3c !important;  /* red */
         color: white !important;
         border-radius: 8px;
     }
+
+    /* small status pill under device name */
+    .status-pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    .stButton .
+    .status-pill.on      { background: #2ecc71; color: #fff; }
+    .status-pill.idle    { background: #f1c40f; color: #000; }
+    .status-pill.off     { background: #e74c3c; color: #fff; }
+    .status-pill.offline { background: #7f8c8d; color: #fff; }
     </style>
     """
     st.markdown(button_css, unsafe_allow_html=True)
+
+
 
     devices = load_devices()
     if not devices:
@@ -329,19 +412,45 @@ def page_mydevices():
             go_add(); st.rerun()
         return
 
+    # cols = st.columns(3)
+    # for i, d in enumerate(devices):
+    #     with cols[i % 3]:
+    #         is_on = device_status(d["id"])
+    #         btn_type = "primary" if is_on else "secondary"   # primary=green, secondary=red
+
+    #         st.markdown(f"####  {d['name']}")
+    #         st.markdown(f"**Device ID:** `{d['id']}`")
+
+    #         if st.button(
+    #             f"View Details ({d['name']})",
+    #             key=f"view_{i}",
+    #             type=btn_type
+    #         ):
+    #             go_device_detail(d["id"], d["name"])
+    #             st.rerun()
+
     cols = st.columns(3)
     for i, d in enumerate(devices):
         with cols[i % 3]:
-            is_on = device_status(d["id"])
-            btn_type = "primary" if is_on else "secondary"   # primary=green, secondary=red
+            status = device_status(d["id"])  # 'on' / 'idle' / 'off' / 'offline'
+            status_label = status.upper()
 
-            st.markdown(f"####  {d['name']}")
+            if status in ("on", "idle"):
+                btn_type = "primary"
+            else:
+                btn_type = "secondary"
+
+            st.markdown(f"#### {d['name']}")
             st.markdown(f"**Device ID:** `{d['id']}`")
+            st.markdown(
+                f'<span class="status-pill {status}">{status_label}</span>',
+                unsafe_allow_html=True
+            )
 
             if st.button(
                 f"View Details ({d['name']})",
                 key=f"view_{i}",
-                type=btn_type
+                type=btn_type,
             ):
                 go_device_detail(d["id"], d["name"])
                 st.rerun()
