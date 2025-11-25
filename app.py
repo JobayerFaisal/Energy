@@ -904,25 +904,23 @@ def _run_all_devices_range_report(devices, start_dt: datetime, end_dt: datetime,
             name="Total Power (W)",
         )
     )
+    # 🔹 Format x-axis to show date + time (minutes)
+    fig.update_xaxes(
+        title_text="Time",
+        tickformat="%Y-%m-%d\n%H:%M"   # date on top line, HH:MM under it
+    )
+
+    # 🔹 Nice hover text: also date + minutes
+    fig.update_traces(
+        hovertemplate="Time: %{x|%Y-%m-%d %H:%M}<br>Power: %{y:.1f} W"
+    )
+
     fig.update_layout(
         hovermode="x unified",
         template="plotly_white",
         yaxis_title="Power (W)",
-        xaxis_title="Time",
     )
-    # fig.update_yaxes(rangemode="tozero")
-    # fig.update_xaxes(
-    #     rangeslider=dict(visible=True),
-    #     rangeselector=dict(
-    #         buttons=[
-    #             dict(count=6, step="hour", stepmode="backward", label="6h"),
-    #             dict(count=12, step="hour", stepmode="backward", label="12h"),
-    #             dict(count=1, step="day", stepmode="backward", label="1d"),
-    #             dict(step="all", label="All"),
-    #         ]
-    #     ),
-    # )
-
+    
     st.plotly_chart(fig, use_container_width=True)
 
 # ------------------------------Range Reports Page ----------------------------------------------
@@ -959,7 +957,7 @@ def page_reports():
     end_dt = datetime.combine(end_date, datetime.max.time())
 
     if start_dt >= end_dt:
-        st.warning("Start must be before end.")
+        st.warning("Start Date must be before the End Date.")
         return
 
     if st.button("Run report"):
