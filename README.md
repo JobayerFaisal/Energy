@@ -184,18 +184,10 @@ Both `.env` and `__pycache__/` currently exist in the repo tree. ([GitHub][1])
 
 ## 📄 License
 
-Add a license file (MIT/Apache-2.0/GPL-3.0) depending on how you want others to use it.
 
 ```
 
----
 
-If you want, I can also generate:
-- a **`.env.example`** based on the variables your code actually reads, and  
-- a **`.gitignore`** that properly ignores `.env`, `__pycache__/`, and `data/` outputs,
-
-…but for that I’d need you to paste the relevant part of `tuya_api.py` where it loads env vars (or tell me what the keys are).
-::contentReference[oaicite:32]{index=32}
 ```
 
 [1]: https://github.com/JobayerFaisal/Energy_Monitoring_System "GitHub - JobayerFaisal/Energy_Monitoring_System"
